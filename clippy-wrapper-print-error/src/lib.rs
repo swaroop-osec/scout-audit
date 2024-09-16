@@ -1,8 +1,17 @@
 #![feature(internal_output_capture)]
 use capture_stdio::Capture;
 use std::io::BufRead;
+use std::sync::Mutex;
+
+lazy_static::lazy_static! {
+    static ref PRINT_ERROR_LOCK: Mutex<()> = Mutex::new(());
+}
 
 pub fn print_error<F: FnOnce()>(cb: F) {
+    let _lock = PRINT_ERROR_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+
     let port = std::env::var("SCOUT_PORT_NUMBER");
 
     if port.is_err() {
@@ -21,7 +30,10 @@ pub fn print_error<F: FnOnce()>(cb: F) {
 
     let port = port.unwrap();
 
-    cb();
+    // Use catch_unwind to handle potential panics
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        cb();
+    }));
 
     let _ = std::io::set_output_capture(old);
     let mut captured = String::new();
@@ -48,4 +60,9 @@ pub fn print_error<F: FnOnce()>(cb: F) {
         .post(format!("http://127.0.0.1:{port}/vuln"))
         .body(body)
         .send();
+
+    // Re-panic if the callback panicked
+    if let Err(panic) = result {
+        std::panic::resume_unwind(panic);
+    }
 }
