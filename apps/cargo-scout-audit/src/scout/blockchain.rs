@@ -1,15 +1,16 @@
-use crate::build_config::{INK_TOOLCHAIN, SOROBAN_TOOLCHAIN};
-use anyhow::{anyhow, Result};
+use crate::build_config::{INK_TOOLCHAIN, SOROBAN_TOOLCHAIN, APTOS_TOOLCHAIN};
+use anyhow::Result;
 use cargo_metadata::Metadata;
 use std::collections::HashSet;
 use strum::IntoEnumIterator;
 use strum_macros::{Display, EnumIter, EnumString};
 
-#[derive(Debug, Copy, Clone, EnumIter, Display, EnumString)]
+#[derive(Debug, Copy, Clone, EnumIter, Display, EnumString, PartialEq)]
 pub enum BlockChain {
     Ink,
     Soroban,
     SubstratePallet,
+    Aptos,
 }
 
 impl BlockChain {
@@ -22,6 +23,7 @@ impl BlockChain {
             BlockChain::Ink => "https://github.com/CoinFabrik/scout",
             BlockChain::Soroban => "https://github.com/CoinFabrik/scout-soroban",
             BlockChain::SubstratePallet => "https://github.com/CoinFabrik/scout-substrate",
+            BlockChain::Aptos => "https://github.com/swaroop-osec/scout-soroban",
         }
     }
 
@@ -30,6 +32,7 @@ impl BlockChain {
             BlockChain::Ink => INK_TOOLCHAIN,
             BlockChain::Soroban => SOROBAN_TOOLCHAIN,
             BlockChain::SubstratePallet => INK_TOOLCHAIN,
+            BlockChain::Aptos => APTOS_TOOLCHAIN,
         }
     }
 
@@ -57,9 +60,7 @@ impl BlockChain {
         } else if immediate_dependencies.contains("frame-system") {
             Ok(BlockChain::SubstratePallet)
         } else {
-            let supported_blockchains = BlockChain::variants().join(", ");
-            Err(anyhow!("Could not find any supported blockchain dependency in the Cargo.toml file.\n   Supported blockchains include:\n   - {}\n",
-                supported_blockchains.replace(", ", "\n   - ")))
+            Ok(BlockChain::Aptos)
         }
     }
 }

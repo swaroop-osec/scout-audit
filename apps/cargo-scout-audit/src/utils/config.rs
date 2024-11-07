@@ -126,6 +126,7 @@ fn get_config_file_path(bc: BlockChain) -> Result<PathBuf> {
         BlockChain::Ink => "ink-config.json",
         BlockChain::Soroban => "soroban-config.json",
         BlockChain::SubstratePallet => "substrate-pallet-config.json",
+        BlockChain::Aptos => todo!(),
     });
 
     Ok(file_path)
